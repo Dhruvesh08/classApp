@@ -13,6 +13,7 @@ class User {
   String pincode;
   String state;
   String country;
+  String photoUrl;
   bool isFaculty;
 
   User({
@@ -27,6 +28,7 @@ class User {
     @required this.pincode,
     @required this.state,
     @required this.country,
+    this.photoUrl,
     this.isFaculty = true,
   });
 
@@ -43,6 +45,7 @@ class User {
       pincode: doc['pincode'],
       state: doc['state'],
       country: doc['country'],
+      photoUrl: doc['photoUrl'],
     );
   }
 }

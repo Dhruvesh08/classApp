@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:classapp/modals/post.dart';
 import 'package:classapp/modals/user.dart';
 import 'package:classapp/screens/create_user_account.dart';
+import 'package:classapp/widgets/post.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -441,10 +443,48 @@ class _UploadImageState extends State<UploadImage> {
   }
 }
 
-class Profile extends StatelessWidget {
-  const Profile({
-    Key key,
-  }) : super(key: key);
+class Profile extends StatefulWidget {
+  @override
+  _ProfileState createState() => _ProfileState();
+}
+
+class _ProfileState extends State<Profile> {
+  final String currentUserId = currentUser?.id;
+  bool isLoading = false;
+  int postCount = 0;
+  List<Post> posts = [];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getProfilePosts();
+  }
+
+  getProfilePosts() async {
+    setState(() {
+      isLoading = true;
+    });
+    QuerySnapshot snapshot = await postsRef
+        .doc(currentUserId)
+        .collection("userPosts")
+        .orderBy('timestemp', descending: true)
+        .get();
+    setState(() {
+      isLoading = false;
+      postCount = snapshot.docs.length;
+      posts = snapshot.docs.map((doc) => Post.fromDocument(doc)).toList();
+    });
+  }
+
+  buildProfilePost() {
+    if (isLoading) {
+      return CircularProgressIndicator();
+    }
+    return Column(
+      children: posts,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -453,37 +493,10 @@ class Profile extends StatelessWidget {
         centerTitle: true,
         title: Text("Profile"),
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Center(
-            child: Container(
-              height: 200,
-              width: 200,
-              child: Image.asset(
-                "assets/images/profile.png",
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-          Text(
-            "${currentUser.name}",
-            style: Theme.of(context).textTheme.headline5,
-          ),
-          Text(
-            "${currentUser.department}",
-            style: Theme.of(context).textTheme.headline6,
-          ),
-          Text(
-            "${currentUser.city}",
-            style: Theme.of(context).textTheme.headline6,
-          ),
-          Text(
-            "${currentUser.country}",
-            style: Theme.of(context).textTheme.headline6,
-          ),
-        ],
-      ),
+      body: SingleChildScrollView(
+          child: Container(
+        child: buildProfilePost(),
+      )),
     );
   }
 }
@@ -494,43 +507,42 @@ class Feed extends StatefulWidget {
 }
 
 class _FeedState extends State<Feed> {
-  bool isLoading = true;
-  int postCount = 0;
+  List<Post> feedPosts;
+  @override
+  void initState() {
+    // TODO: implement initState
+    getTimeLine();
+  }
 
-  List<Feed> feed = [];
+  getTimeLine() async {
+    QuerySnapshot snapshot = await postsRef
+        .doc(currentUser.id)
+        .collection("userPosts")
+        .orderBy("timestemp", descending: true)
+        .get();
 
-  buildPosts() {
-    if (isLoading) {
+    List<Post> feedPosts =
+        snapshot.docs.map((doc) => Post.fromDocument(doc)).toList();
+    setState(() {
+      this.feedPosts = feedPosts;
+    });
+  }
+
+  buildTimeLine() {
+    if (feedPosts == null) {
       return CircularProgressIndicator();
+    } else {
+      return ListView(
+        children: feedPosts,
+      );
     }
-    return Column(
-      children: feed,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    CollectionReference posts = FirebaseFirestore.instance.collection('posts');
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: posts.snapshots(),
-      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-        if (snapshot.hasError) {
-          return Text('Something went wrong');
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Text("Loading");
-        }
-
-        return new ListView(
-          children: snapshot.data.docs.map((DocumentSnapshot document) {
-            return new ListTile(
-              title: new Text(document.data()['mediaUrl']),
-            );
-          }).toList(),
-        );
-      },
+    return Container(
+      child: RefreshIndicator(
+          child: buildTimeLine(), onRefresh: () => getTimeLine()),
     );
   }
 }

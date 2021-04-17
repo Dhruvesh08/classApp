@@ -1,5 +1,6 @@
 import 'package:classapp/modals/user.dart';
 import 'package:flutter/material.dart';
+import './home.dart';
 
 class Profile extends StatelessWidget {
   final User user;
