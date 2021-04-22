@@ -358,7 +358,8 @@ class _UploadImageState extends State<UploadImage> {
                 Text("Post"),
                 ListTile(
                   leading: CircleAvatar(
-                    child: Text("A"),
+                    radius: 30,
+                    foregroundImage: NetworkImage(currentUser.photoUrl),
                   ),
                   title: TextField(
                     controller: _postDataController,
